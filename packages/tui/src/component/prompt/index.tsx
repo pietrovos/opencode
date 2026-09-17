@@ -986,6 +986,36 @@ export function Prompt(props: PromptProps) {
       return false
     }
 
+    const newSessionPrompt = trimmed.match(/^\/new\s+([\s\S]+)$/)?.[1]
+    if (props.sessionID && newSessionPrompt) {
+      const res = await sdk.client.session.create({
+        directory: workspaceSession?.directory,
+        workspace: workspaceID,
+        agent: agent.name,
+        model: {
+          providerID: selectedModel.providerID,
+          id: selectedModel.modelID,
+          variant: local.model.variant.current(),
+        },
+      })
+
+      if (res.error) {
+        console.log("Creating a session failed:", res.error)
+        toast.show({
+          message: "Creating a session failed. Open console for more details.",
+          variant: "error",
+        })
+        return true
+      }
+
+      route.navigate({
+        type: "session",
+        sessionID: res.data.id,
+        prompt: { input: newSessionPrompt, parts: [] },
+      })
+      return true
+    }
+
     const variant = local.model.variant.current()
     let sessionID = props.sessionID
     let finishMoveProgress = false

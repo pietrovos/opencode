@@ -36,6 +36,10 @@ export interface DialogSelectProps<T> {
   renderFilter?: boolean
   locked?: boolean
   preserveSelection?: boolean
+  multiSelect?: {
+    selected: (option: DialogSelectOption<T>) => boolean
+    onChange: (options: DialogSelectOption<T>[]) => void
+  }
   actions?: {
     command: string
     title: string
@@ -95,6 +99,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   const [focusedAction, setFocusedAction] = createSignal<number>()
   const actionFocused = createMemo(() => focusedAction() !== undefined)
   let selection: { value: T; category?: string } | undefined
+  let multiSelectionAnchor: number | undefined
   let resetSelection = false
   let visibilityGeneration = 0
 
@@ -296,8 +301,19 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     moveTo(next, true)
   }
 
-  function moveTo(next: number, center = false, preserve = true) {
+  function moveRange(direction: number) {
+    if (props.locked || !props.multiSelect) return
+    if (flat().length === 0) return
+    const next = Math.max(0, Math.min(flat().length - 1, store.selected + direction))
+    const anchor = multiSelectionAnchor ?? store.selected
+    multiSelectionAnchor = anchor
+    props.multiSelect.onChange(flat().slice(Math.min(anchor, next), Math.max(anchor, next) + 1))
+    moveTo(next, true, true, false)
+  }
+
+  function moveTo(next: number, center = false, preserve = true, resetMultiSelection = true) {
     setFocusedAction(undefined)
+    if (resetMultiSelection) multiSelectionAnchor = next
     setStore("selected", next)
     const option = selected()
     if (option) {
@@ -389,6 +405,28 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
             move(1)
           },
         },
+        ...(props.multiSelect
+          ? [
+              {
+                name: "dialog.select.range_prev",
+                title: "Select previous item",
+                category: "Dialog",
+                run() {
+                  setStore("input", "keyboard")
+                  moveRange(-1)
+                },
+              },
+              {
+                name: "dialog.select.range_next",
+                title: "Select next item",
+                category: "Dialog",
+                run() {
+                  setStore("input", "keyboard")
+                  moveRange(1)
+                },
+              },
+            ]
+          : []),
         {
           name: "dialog.select.page_up",
           title: "Page up",
@@ -457,6 +495,22 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
           "dialog.select.end",
           "dialog.select.submit",
         ]),
+        ...(props.multiSelect
+          ? [
+              {
+                key: "shift+up",
+                desc: "Select previous item",
+                group: "Dialog",
+                cmd: "dialog.select.range_prev",
+              },
+              {
+                key: "shift+down",
+                desc: "Select next item",
+                group: "Dialog",
+                cmd: "dialog.select.range_next",
+              },
+            ]
+          : []),
         ...visible.flatMap((item) => tuiConfig.keybinds.get(item.command)),
         ...(visible.length
           ? [
@@ -636,6 +690,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                     {(option) => {
                       const active = createMemo(() => !props.locked && isDeepEqual(option.value, selected()?.value))
                       const current = createMemo(() => isDeepEqual(option.value, props.current))
+                      const multiSelected = createMemo(() => props.multiSelect?.selected(option) ?? false)
                       return (
                         <box
                           flexDirection="column"
@@ -674,7 +729,9 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                                 ? actionFocused()
                                   ? theme.backgroundElement
                                   : (option.bg ?? theme.primary)
-                                : RGBA.fromInts(0, 0, 0, 0)
+                                : multiSelected()
+                                  ? theme.backgroundElement
+                                  : RGBA.fromInts(0, 0, 0, 0)
                             }
                           >
                             <Show when={!current() && option.margin}>
@@ -691,6 +748,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                               description={option.description !== category ? option.description : undefined}
                               active={active()}
                               current={current()}
+                              selected={multiSelected()}
                               muted={actionFocused()}
                               gutter={option.gutter}
                             />
@@ -735,6 +793,7 @@ function Option(props: {
   description?: string
   active?: boolean
   current?: boolean
+  selected?: boolean
   muted?: boolean
   footer?: JSX.Element | string
   titleWidth?: number
@@ -756,6 +815,11 @@ function Option(props: {
       <Show when={props.current && !props.gutter}>
         <text flexShrink={0} fg={text()} marginRight={0}>
           ●
+        </text>
+      </Show>
+      <Show when={props.selected && !props.current && !props.gutter}>
+        <text flexShrink={0} fg={theme.primary} marginRight={0}>
+          *
         </text>
       </Show>
       <Show when={props.gutter}>

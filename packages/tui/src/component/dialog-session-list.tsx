@@ -52,7 +52,8 @@ export function DialogSessionList() {
   const event = useEvent()
   const local = useLocal()
   const toast = useToast()
-  const [toDelete, setToDelete] = createSignal<string>()
+  const [toDelete, setToDelete] = createSignal<Set<string>>()
+  const [selected, setSelected] = createSignal(new Set<string>())
   const [deleted, setDeleted] = createSignal(new Set<string>())
   const [search, setSearch] = createDebouncedSignal("", 150)
   const deleteHint = useCommandShortcut("session.delete")
@@ -233,7 +234,7 @@ export function DialogSessionList() {
       const footer =
         directory && directory !== project.data.project.mainDir ? Locale.truncate(path.basename(directory), 20) : ""
 
-      const isDeleting = toDelete() === x.id
+      const isDeleting = toDelete()?.has(x.id) ?? false
       const status = sync.data.session_status?.[x.id]
       const isWorking = status?.type === "busy" || status?.type === "retry"
       const slot = slotByID.get(x.id)
@@ -280,6 +281,10 @@ export function DialogSessionList() {
       onMove={() => {
         setToDelete(undefined)
       }}
+      multiSelect={{
+        selected: (option) => selected().has(option.value),
+        onChange: (options) => setSelected(new Set(options.map((option) => option.value))),
+      }}
       onSelect={(option) => {
         route.navigate({
           type: "session",
@@ -299,49 +304,41 @@ export function DialogSessionList() {
           command: "session.delete",
           title: "delete",
           onTrigger: async (option) => {
-            if (toDelete() === option.value) {
-              const session = sessions().find((item) => item.id === option.value)
-              const status = session?.workspaceID ? project.workspace.status(session.workspaceID) : undefined
-
-              try {
-                const result = await sdk.client.session.delete({
-                  sessionID: option.value,
-                })
-                if (result.error) {
-                  if (session?.workspaceID) {
-                    recover(session)
-                  } else {
-                    toast.show({
-                      variant: "error",
-                      title: "Failed to delete session",
-                      message: errorMessage(result.error),
-                    })
-                  }
-                  setToDelete(undefined)
-                  return
-                }
-              } catch (err) {
-                if (session?.workspaceID) {
-                  recover(session)
-                } else {
+            const pending = toDelete()
+            const sessionIDs = selected().size > 0 ? selected() : new Set([option.value])
+            if (pending?.has(option.value)) {
+              const sessionsToDelete = sessions().filter((session) => pending.has(session.id))
+              const results = await Promise.all(
+                sessionsToDelete.map(async (session) => ({
+                  session,
+                  result: await sdk.client.session.delete({ sessionID: session.id }).catch((error) => ({ error })),
+                })),
+              )
+              const failed = results.find(({ result }) => result.error)
+              if (failed) {
+                if (failed.session.workspaceID) recover(failed.session)
+                else {
                   toast.show({
                     variant: "error",
                     title: "Failed to delete session",
-                    message: errorMessage(err),
+                    message: errorMessage(failed.result.error),
                   })
                 }
-                setToDelete(undefined)
-                return
               }
-              if (status && status !== "connected") {
+              if (
+                sessionsToDelete.some(
+                  (session) => session.workspaceID && project.workspace.status(session.workspaceID) !== "connected",
+                )
+              ) {
                 await sync.session.refresh()
               }
               await refetchBrowse()
               if (search()) await refetch()
               setToDelete(undefined)
+              setSelected(new Set<string>())
               return
             }
-            setToDelete(option.value)
+            setToDelete(sessionIDs)
           },
         },
         {
