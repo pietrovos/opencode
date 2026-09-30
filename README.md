@@ -7,123 +7,123 @@
     </picture>
   </a>
 </p>
-<p align="center">The open source AI coding agent.</p>
-<p align="center">
-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
-  <a href="https://www.npmjs.com/package/opencode-ai"><img alt="npm" src="https://img.shields.io/npm/v/opencode-ai?style=flat-square" /></a>
-  <a href="https://github.com/anomalyco/opencode/actions/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/publish.yml?style=flat-square&branch=dev" /></a>
-</p>
 
-<p align="center">
-  <a href="README.md">English</a> |
-  <a href="README.zh.md">简体中文</a> |
-  <a href="README.zht.md">繁體中文</a> |
-  <a href="README.ko.md">한국어</a> |
-  <a href="README.de.md">Deutsch</a> |
-  <a href="README.es.md">Español</a> |
-  <a href="README.fr.md">Français</a> |
-  <a href="README.it.md">Italiano</a> |
-  <a href="README.da.md">Dansk</a> |
-  <a href="README.ja.md">日本語</a> |
-  <a href="README.pl.md">Polski</a> |
-  <a href="README.ru.md">Русский</a> |
-  <a href="README.bs.md">Bosanski</a> |
-  <a href="README.ar.md">العربية</a> |
-  <a href="README.no.md">Norsk</a> |
-  <a href="README.br.md">Português (Brasil)</a> |
-  <a href="README.th.md">ไทย</a> |
-  <a href="README.tr.md">Türkçe</a> |
-  <a href="README.uk.md">Українська</a> |
-  <a href="README.bn.md">বাংলা</a> |
-  <a href="README.gr.md">Ελληνικά</a> |
-  <a href="README.vi.md">Tiếng Việt</a>
-</p>
+# OpenCode: Pietro's custom TUI fork
 
-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+This is my personal fork of [OpenCode](https://github.com/anomalyco/opencode), the open source AI coding agent.
+I use it to customize the terminal UI for my session workflow, including branching conversations into separate
+terminal windows and managing multiple sessions. The custom work lives on [`custom-tui`](https://github.com/pietrovos/opencode/tree/custom-tui),
+with updates merged from upstream's `dev` branch.
 
----
+This fork is maintained by [Pietro Vos](https://github.com/pietrovos) and is not affiliated with the OpenCode team.
 
-### Installation
+## Custom session workflow
 
-```bash
-# YOLO
-curl -fsSL https://opencode.ai/install | bash
+### Open multiple forks in Kitty
 
-# Package managers
-npm i -g opencode-ai@latest        # or bun/pnpm/yarn
-scoop install opencode             # Windows
-choco install opencode             # Windows
-brew install anomalyco/tap/opencode # macOS and Linux (recommended, always up to date)
-brew install opencode              # macOS and Linux (official brew formula, updated less)
-sudo pacman -S opencode            # Arch Linux (Stable)
-paru -S opencode-bin               # Arch Linux (Latest from AUR)
-mise use -g opencode               # Any OS
-nix run nixpkgs#opencode           # or github:anomalyco/opencode for latest dev branch
+Choose "Fork session" from the command palette, then select the full session or a point in its message timeline.
+The fork dialog asks how many copies to create. Each copy gets a numbered title such as `My session (fork #1)`
+and opens in a separate Kitty window in that session's directory. The original session stays open.
+
+This lets me explore different approaches from the same conversation history in parallel. Kitty must be available
+on `PATH`. The window launcher uses the running executable, so use a compiled OpenCode binary for this workflow.
+
+### Delete a range of sessions
+
+In the session list, use `Shift+Up` or `Shift+Down` to select a contiguous range. Press the delete shortcut once
+to mark the selected sessions for deletion, then again to confirm. With no range selected, it applies to the
+focused session.
+
+The default session-list shortcut is `Ctrl+X`, then `L`; deletion is `Ctrl+D` inside that dialog.
+
+### Start a fresh session with a prompt
+
+From an existing session, enter `/new <prompt>` to create a session with the current agent, model, variant,
+and workspace selection. The new session opens with the text after `/new` loaded into its prompt editor,
+ready to review and submit.
+
+```text
+/new investigate the failing integration tests
 ```
 
-> [!TIP]
-> Remove versions older than 0.1.x before installing.
+### Local additions in progress
 
-### Desktop App (BETA)
+These features are currently in the local working tree and are not yet committed to the published branch:
 
-OpenCode is also available as a desktop application. Download directly from the [releases page](https://github.com/anomalyco/opencode/releases) or [opencode.ai/download](https://opencode.ai/download).
+- `Ctrl+Alt+R`, or "Restart OpenCode in this session" in the command palette, restarts the local TUI and reopens
+  the current session. The command is disabled on Windows.
+- The session sidebar shows a collapsed preview of the latest user message. Click it to expand or collapse
+  the full text. The preview follows the active history when messages are reverted.
 
-| Platform              | Download                           |
-| --------------------- | ---------------------------------- |
-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
-| Windows               | `opencode-desktop-windows-x64.exe` |
-| Linux                 | `.deb`, `.rpm`, or `.AppImage`     |
+## Run this fork
 
-```bash
-# macOS (Homebrew)
-brew install --cask opencode-desktop
-# Windows (Scoop)
-scoop bucket add extras; scoop install extras/opencode-desktop
-```
+The installer at `opencode.ai`, package-manager releases, and upstream desktop downloads install upstream
+OpenCode. To use these customizations, build or run the `custom-tui` branch from this repository.
 
-#### Installation Directory
-
-The install script respects the following priority order for the installation path:
-
-1. `$OPENCODE_INSTALL_DIR` - Custom installation directory
-2. `$XDG_BIN_DIR` - XDG Base Directory Specification compliant path
-3. `$HOME/bin` - Standard user binary directory (if it exists or can be created)
-4. `$HOME/.opencode/bin` - Default fallback
+Use the Bun version pinned in [`package.json`](package.json) (currently `1.3.14`).
 
 ```bash
-# Examples
-OPENCODE_INSTALL_DIR=/usr/local/bin curl -fsSL https://opencode.ai/install | bash
-XDG_BIN_DIR=$HOME/.local/bin curl -fsSL https://opencode.ai/install | bash
+git clone --branch custom-tui https://github.com/pietrovos/opencode.git opencode-custom
+cd opencode-custom
+bun install
+
+# Run the local source against a project directory
+bun dev /path/to/project
 ```
 
-### Agents
+Running `bun dev .` opens OpenCode against this repository. Source mode is useful for TUI development;
+the Kitty multi-fork launcher expects the compiled executable.
 
-OpenCode includes two built-in agents you can switch between with the `Tab` key.
+### Build a standalone binary
 
-- **build** - Default, full-access agent for development work
-- **plan** - Read-only agent for analysis and code exploration
-  - Denies file edits by default
-  - Asks permission before running bash commands
-  - Ideal for exploring unfamiliar codebases or planning changes
+From the repository root:
 
-Also included is a **general** subagent for complex searches and multistep tasks.
-This is used internally and can be invoked using `@general` in messages.
+```bash
+bun run packages/opencode/script/build.ts --single
+```
 
-Learn more about [agents](https://opencode.ai/docs/agents).
+The executable is written to `packages/opencode/dist/opencode-<platform>/bin/opencode`.
+For example, on Linux x64:
 
-### Documentation
+```bash
+./packages/opencode/dist/opencode-linux-x64/bin/opencode /path/to/project
+```
 
-For more info on how to configure OpenCode, [**head over to our docs**](https://opencode.ai/docs).
+For a terminal-only build that skips bundling the web UI:
 
-### Contributing
+```bash
+bun run packages/opencode/script/build.ts --single --skip-embed-web-ui
+```
 
-If you're interested in contributing to OpenCode, please read our [contributing docs](./CONTRIBUTING.md) before submitting a pull request.
+Rebuild after changing source code to use those changes in the standalone binary.
 
-### Building on OpenCode
+## Working on the fork
 
-If you are working on a project that's related to OpenCode and is using "opencode" as part of its name, for example "opencode-dashboard" or "opencode-mobile", please add a note to your README to clarify that it is not built by the OpenCode team and is not affiliated with us in any way.
+The fork-specific code is concentrated in:
 
----
+| Path                                                                | Purpose                                        |
+| ------------------------------------------------------------------- | ---------------------------------------------- |
+| `packages/tui/src/component/dialog-session-list.tsx`                | Session selection and bulk deletion            |
+| `packages/tui/src/ui/dialog-select.tsx`                             | Range-selection support in list dialogs        |
+| `packages/tui/src/routes/session/dialog-fork-from-timeline.tsx`     | Fork count, naming, and Kitty window launching |
+| `packages/tui/src/component/prompt/index.tsx`                       | `/new <prompt>` handoff                        |
+| `packages/tui/src/routes/session/sidebar.tsx`                       | Latest-message preview                         |
+| `packages/tui/src/app.tsx` and `packages/tui/src/config/keybind.ts` | Restart command and shortcut                   |
+| `packages/opencode/src/cli/cmd/tui.ts`                              | Process restart and session reopening          |
 
-**Join our community** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+The rest of the monorepo includes the upstream server, providers, web and desktop apps, SDKs, and documentation.
+See [`AGENTS.md`](AGENTS.md) for repository conventions and [`CONTRIBUTING.md`](CONTRIBUTING.md) for upstream
+development guidance. Run checks from the affected package directory, for example:
+
+```bash
+bun run --cwd packages/tui typecheck
+bun run --cwd packages/opencode typecheck
+```
+
+## Upstream documentation and license
+
+- [OpenCode documentation](https://opencode.ai/docs) covers configuration, providers, agents, and standard usage.
+- [Upstream repository](https://github.com/anomalyco/opencode) contains the original project and release history.
+- The other language READMEs in this repository retain the upstream documentation.
+
+OpenCode and this fork are licensed under the [MIT license](LICENSE).
