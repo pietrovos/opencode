@@ -15,7 +15,7 @@ I use it to customize the terminal UI for my session workflow, including branchi
 terminal windows and managing multiple sessions. The custom work lives on [`custom-tui`](https://github.com/pietrovos/opencode/tree/custom-tui),
 with updates merged from upstream's `dev` branch.
 
-This fork is maintained by [Pietro Vos](https://github.com/pietrovos) and is not affiliated with the OpenCode team.
+This fork is maintained by [Pietro Adamvoski](https://github.com/pietrovos) and is not affiliated with the OpenCode team.
 
 ## Custom session workflow
 
